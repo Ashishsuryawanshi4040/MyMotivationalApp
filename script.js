@@ -1,1 +1,7 @@
-const BACKEND_URL = 'https://mymotivationalapp-backend.onrender.com'; // update after deploy
+const BACKEND_URL = 'https://mymotivationalapp-backend.onrender.com';
+
+fetch(`${BACKEND_URL}/upload`, {
+  method: 'POST',
+  body: formData
+});
+
