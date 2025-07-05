@@ -1,1 +1,1 @@
-const BACKEND_URL = 'https://mymotivationalapp.onrender.com'; // update after deploy
+const BACKEND_URL = 'https://mymotivationalapp-backend.onrender.com'; // update after deploy
