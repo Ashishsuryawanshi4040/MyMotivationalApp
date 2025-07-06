@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motivational Shorts Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            color: white;
+        }
+
+        .container {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .video-slide {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #000;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                transparent 0%, 
+                transparent 60%, 
+                rgba(0,0,0,0.3) 100%
+            );
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .motivational-quote {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 80%;
+        }
+
+        .motivational-quote.show {
+            opacity: 1;
+        }
+
+        .quote-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.3;
+        }
+
+        .quote-author {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 4;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-slide:hover .controls {
+            opacity: 1;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 2px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .play-pause-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 3;
+            backdrop-filter: blur(10px);
+        }
+
+        .play-pause-overlay.show {
+            opacity: 1;
+        }
+
+        .play-icon, .pause-icon {
+            color: white;
+            font-size: 24px;
+        }
+
+        .navigation-hint {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-arrow {
+            display: block;
+            width: 30px;
+            height: 30px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+            z-index: 3;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            z-index: 3;
+        }
+
+        .video-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 5;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .video-container {
+                max-width: 100%;
+            }
+            
+            .quote-text {
+                font-size: 1.2rem;
+            }
+            
+            .navigation-hint {
+                display: none;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .video-container {
+                max-width: 400px;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            }
+            
+            video {
+                border-radius: 20px;
+            }
+        }
+        #uploadButton {
+  position: fixed;
+  bottom: 80px; /* give room for delete button */
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+#deleteButton {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  border-radius: 50%;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+
+#uploadButton {
+    top: 50%;
+}
+
+#deleteButton {
+    top: 60%;
+}
+
+
+
+#fileInput {
+  display: none;
+}
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <!-- Video slides will be dynamically generated here -->
+    </div>
+    
+    <div class="navigation-hint">
+        <div class="nav-arrow" onclick="navigateVideo(-1)">↑</div>
+        <div class="nav-arrow" onclick="navigateVideo(1)">↓</div>
+    </div>
+    
+    <button id="uploadButton">+</button>
+<button id="deleteButton">−</button>
+
+<input type="file" id="fileInput" accept="video/*">
+
+    <div class="video-counter" id="videoCounter">1 / 0</div>
+
+    <script>
+        class MotivationalShortsPlayer {
+            constructor() {
+                this.currentVideoIndex = 0;
+                this.videos = []; // your video objects
+                this.currentIndex = 0; // or similar
+                this.totalVideos = 10; // Assuming 10 videos for demo
+                this.container = document.getElementById('container');
+                this.videoCounter = document.getElementById('videoCounter');
+                this.isInitialized = false;
+                
+                // Motivational quotes to display
+                this.quotes = [
+                    { text: "Believe in yourself!", author: "You've got this" },
+                    { text: "Every expert was once a beginner", author: "Keep learning" },
+                    { text: "Success is not final, failure is not fatal", author: "Keep going" },
+                    { text: "The only way to do great work is to love what you do", author: "Steve Jobs" },
+                    { text: "Don't watch the clock; do what it does. Keep going", author: "Sam Levenson" },
+                    { text: "The future belongs to those who believe in the beauty of their dreams", author: "Eleanor Roosevelt" },
+                    { text: "It is during our darkest moments that we must focus to see the light", author: "Aristotle" },
+                    { text: "Yesterday is history, tomorrow is a mystery, today is a gift", author: "Eleanor Roosevelt" },
+                    { text: "You are never too old to set another goal or to dream a new dream", author: "C.S. Lewis" },
+                    { text: "The way to get started is to quit talking and begin doing", author: "Walt Disney" }
+                ];
+                
+                this.init();
+            }
+
+            async init() {
+                await this.createVideoSlides();
+                this.setupEventListeners();
+                this.updateCounter();
+                this.isInitialized = true;
+                
+                // Start playing the first video
+                setTimeout(() => {
+                    this.playCurrentVideo();
+                }, 500);
+            }
+
+            async createVideoSlides() {
+    let videoCount = 0;
+
+    for (let i = 1; i <= this.totalVideos; i++) {
+        const fileName = encodeURIComponent(`video (${i}).mp4`);
+        const path = `motivationalshorts/${fileName}`;
+        const videoExists = await this.checkVideoExists(path);
+
+        if (videoExists) {
+            this.createVideoSlide(path, videoCount); // use encoded path
+            videoCount++;
+        }
+    }
+
+    this.totalVideos = videoCount;
+    this.updateCounter();
+
+    if (videoCount === 0) {
+        this.showErrorMessage();
+    }
+}
+
+checkVideoExists(src) {
+    return fetch(src, { method: 'HEAD' })
+        .then(response => response.ok)
+        .catch(() => false);
+}
+
+createVideoSlide(videoSrc, index) {
+    const slide = document.createElement('div');
+    slide.className = 'video-slide';
+    slide.dataset.index = index;
+
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'video-container';
+
+    // Loading spinner
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-spinner';
+    videoContainer.appendChild(loadingSpinner);
+
+    // Video element
+    const video = document.createElement('video');
+    video.src = videoSrc;
+    video.muted = false;
+    video.loop = false;
+    video.playsInline = true;
+    video.preload = 'metadata';
+
+    video.addEventListener('loadeddata', () => {
+        loadingSpinner.style.display = 'none';
+    });
+
+    video.addEventListener('error', () => {
+        this.showVideoError(videoContainer);
+    });
+
+    video.addEventListener('click', () => {
+        this.togglePlayPause(video);
+    });
+
+    // Handle replay if last video ends
+if (index === this.totalVideos - 1) {
+    video.addEventListener('ended', () => {
+        this.currentVideoIndex = 0;
+        const firstSlide = this.videos[0].slide;
+        firstSlide.scrollIntoView({ behavior: 'auto' });
+
+        setTimeout(() => {
+            this.playCurrentVideo();
+        }, 300);
+    });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const uploadButton = document.getElementById('uploadButton');
+  if (uploadButton) {
+    uploadButton.addEventListener('click', () => {
+      // your upload logic
+    });
+  }
+
+  const deleteButton = document.getElementById('deleteButton');
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      // your delete logic
+    });
+  }
+});
+
+
+document.getElementById('uploadButton').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Prevent re-triggering
+  document.getElementById('fileInput').value = '';
+
+  const formData = new FormData();
+  formData.append('video', file);
+
+  try {
+    const response = await fetch('/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const text = await response.text();
+      alert('Video uploaded: ' + text);
+
+      // Reload the video list if needed
+      if (typeof this?.createVideoSlides === 'function') {
+        this.createVideoSlides();
+      }
+    } else {
+      alert('Upload failed.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error uploading video.');
+  }
+});
+
+document.getElementById('deleteButton').addEventListener('click', async () => {
+    const currentVideo = Array.from(document.querySelectorAll('video')).find(v => !v.paused && !v.ended && v.readyState > 2);
+
+    if (!currentVideo || !currentVideo.src) {
+        alert('No video playing.');
+        return;
+    }
+
+    const videoPath = decodeURIComponent(currentVideo.src.split('/').pop());
+
+    const confirmed = confirm(`Are you sure you want to delete "${videoPath}"?`);
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`/delete?filename=${encodeURIComponent(videoPath)}`, {
+            method: 'DELETE'
+        });
+        const text = await res.text();
+
+        if (res.ok) {
+            alert(text);
+            location.reload(); // Reload to update slides
+        } else {
+            alert('Delete failed: ' + text);
+        }
+    } catch (err) {
+        alert('Error deleting video.');
+        console.error(err);
+    }
+});
+
+    // Motivational quote
+                const quote = this.quotes[index % this.quotes.length];
+                const quoteDiv = document.createElement('div');
+                quoteDiv.className = 'motivational-quote';
+                quoteDiv.innerHTML = `
+                    <div class="quote-text">${quote.text}</div>
+                    <div class="quote-author">- ${quote.author}</div>
+                `;
+
+    // Play/Pause overlay
+    const playPauseOverlay = document.createElement('div');
+    playPauseOverlay.className = 'play-pause-overlay';
+    playPauseOverlay.innerHTML = '<span class="play-icon">▶</span>';
+    playPauseOverlay.addEventListener('click', () => {
+        this.togglePlayPause(video);
+    });
+
+    // Controls
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+
+    const muteBtn = document.createElement('button');
+    muteBtn.className = 'control-btn';
+    muteBtn.innerHTML = '🔇';
+    muteBtn.addEventListener('click', () => {
+        video.muted = !video.muted;
+        muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+    });
+
+    const progressBar = document.createElement('div');
+    progressBar.className = 'progress-bar';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'progress-fill';
+    progressBar.appendChild(progressFill);
+
+    video.addEventListener('timeupdate', () => {
+        if (video.duration) {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+    });
+
+    controls.appendChild(muteBtn);
+    controls.appendChild(progressBar);
+
+    // Append all to video container
+    videoContainer.appendChild(video);
+    videoContainer.appendChild(quoteDiv);
+    videoContainer.appendChild(playPauseOverlay);
+    videoContainer.appendChild(controls);
+
+    // Append to slide
+    slide.appendChild(videoContainer);
+    this.container.appendChild(slide);
+
+    // Store video reference
+    this.videos.push({
+        element: video,
+        slide: slide,
+        quote: quoteDiv,
+        playPauseOverlay: playPauseOverlay,
+        index: index
+    });
+}
+
+            
+
+            setupEventListeners() {
+                // Scroll event listener
+                this.container.addEventListener('scroll', this.handleScroll.bind(this));
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.navigateVideo(-1);
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.navigateVideo(1);
+                    } else if (e.key === ' ') {
+                        e.preventDefault();
+                        this.toggleCurrentVideo();
+                    }
+                });
+
+                // Intersection Observer for autoplay
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const videoIndex = parseInt(entry.target.dataset.index);
+                        const videoData = this.videos[videoIndex];
+                        
+                        if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                            this.currentVideoIndex = videoIndex;
+                            this.updateCounter();
+                            this.playCurrentVideo();
+                        } else {
+                            if (videoData && videoData.element) {
+                                videoData.element.pause();
+                                this.hideQuote(videoData.quote);
+                            }
+                        }
+                    });
+                }, { threshold: 0.7 });
+
+                this.videos.forEach(video => {
+                    observer.observe(video.slide);
+                });
+            }
+
+            handleScroll() {
+                // Throttle scroll events
+                clearTimeout(this.scrollTimeout);
+                this.scrollTimeout = setTimeout(() => {
+                    // Additional scroll handling if needed
+                }, 100);
+            }
+
+            navigateVideo(direction) {
+                const newIndex = Math.max(0, Math.min(this.videos.length - 1, this.currentVideoIndex + direction));
+                if (newIndex !== this.currentVideoIndex) {
+                    const targetSlide = this.videos[newIndex].slide;
+                    targetSlide.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+
+            async playCurrentVideo() {
+                if (!this.videos[this.currentVideoIndex]) return;
+
+                const currentVideo = this.videos[this.currentVideoIndex];
+                
+                // Pause all other videos
+                this.videos.forEach((video, index) => {
+                    if (index !== this.currentVideoIndex) {
+                        video.element.pause();
+                        this.hideQuote(video.quote);
+                        video.playPauseOverlay.classList.remove('show');
+                    }
+                });
+
+                try {
+                    await currentVideo.element.play();
+                    this.showQuote(currentVideo.quote);
+                    currentVideo.playPauseOverlay.classList.remove('show');
+                } catch (error) {
+                    console.log('Autoplay prevented:', error);
+                    currentVideo.playPauseOverlay.classList.add('show');
+                }
+            }
+
+            togglePlayPause(video) {
+                const videoData = this.videos.find(v => v.element === video);
+                if (!videoData) return;
+
+                if (video.paused) {
+                    video.play().then(() => {
+                        videoData.playPauseOverlay.classList.remove('show');
+                    }).catch(error => {
+                        console.log('Play failed:', error);
+                    });
+                } else {
+                    video.pause();
+                    videoData.playPauseOverlay.classList.add('show');
+                    videoData.playPauseOverlay.innerHTML = '<span class="play-icon">▶</span>';
+                }
+            }
+
+            toggleCurrentVideo() {
+                if (this.videos[this.currentVideoIndex]) {
+                    this.togglePlayPause(this.videos[this.currentVideoIndex].element);
+                }
+            }
+
+            showQuote(quoteElement) {
+                quoteElement.classList.add('show');
+                setTimeout(() => {
+                    this.hideQuote(quoteElement);
+                }, 3000);
+            }
+
+            hideQuote(quoteElement) {
+                quoteElement.classList.remove('show');
+            }
+
+            updateCounter() {
+                this.videoCounter.textContent = `${this.currentVideoIndex + 1} / ${this.totalVideos}`;
+            }
+
+            showVideoError(container) {
+                const loadingSpinner = container.querySelector('.loading-spinner');
+                if (loadingSpinner) {
+                    loadingSpinner.style.display = 'none';
+                }
+
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+                    <div>Video could not be loaded</div>
+                `;
+                container.appendChild(errorDiv);
+            }
+
+            showErrorMessage() {
+                this.container.innerHTML = `
+                    <div class="video-slide">
+                        <div class="video-container">
+                            <div class="error-message">
+                                <div style="font-size: 3rem; margin-bottom: 20px;">📁</div>
+                                <div style="font-size: 1.2rem; margin-bottom: 10px;">No videos found</div>
+                                <div style="font-size: 0.9rem; opacity: 0.7;">
+                                    Please ensure videos are placed in the 'motivationalshorts/' folder
+                                    <br>
+                                    (video1.mp4, video2.mp4, etc.)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Global navigation function
+        function navigateVideo(direction) {
+            if (window.player) {
+                window.player.navigateVideo(direction);
+            }
+        }
+
+        // Initialize the player when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.player = new MotivationalShortsPlayer();
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
+
