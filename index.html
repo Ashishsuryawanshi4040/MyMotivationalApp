@@ -402,7 +402,7 @@ class MotivationalShortsPlayer {
 
         for (let i = 1; i <= this.totalVideos; i++) {
             const fileName = encodeURIComponent(`video (${i}).mp4`);
-            const path = `${BACKEND_URL}/motivationalshorts/${fileName}`;
+            const path = `https://mymotivationalapp-backend.onrender.com/motivationalshorts/${fileName}`;
             const videoExists = await this.checkVideoExists(path);
 
             if (videoExists) {
@@ -574,10 +574,11 @@ class MotivationalShortsPlayer {
             formData.append('video', file);
 
             try {
-                const res = await fetch(`${BACKEND_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('https://mymotivationalapp-backend.onrender.com/upload', {
+                             method: 'POST',
+                             body: formData
+                             });
+
 
                 const text = await res.text();
                 if (res.ok) {
@@ -605,9 +606,9 @@ class MotivationalShortsPlayer {
             if (!confirmed) return;
 
             try {
-                const res = await fetch(`${BACKEND_URL}/delete?filename=${encodeURIComponent(videoPath)}`, {
-                    method: 'DELETE'
-                });
+                const res = await fetch(`https://mymotivationalapp-backend.onrender.com/delete?filename=${encodeURIComponent(videoPath)}`, {
+                            method: 'DELETE'
+                            });
 
                 const text = await res.text();
                 if (res.ok) {
